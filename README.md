@@ -1,4 +1,3 @@
-markdown
 ![Gemini Assistant Chrome Extension Logo](extension/icon.png)
 
 # Gemini Assistant v1.1
@@ -13,6 +12,10 @@ Works with Google Chrome and Microsoft Edge.
 - Theme support (light/dark)
 - Markdown formatting and syntax highlighting
 - Search the web without leaving the page your on
+
+- Future updates
+- Image generation
+- Long term Chat History - Memo
 
 ## Installation Instructions
 
