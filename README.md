@@ -1,5 +1,7 @@
 # Gemini Assistant v1.1
 
+Works with Google Chrome and Microsoft Edge.
+
 ## Features
 - Chat with Gemini about webpage content
 - Get code explanations and analysis
