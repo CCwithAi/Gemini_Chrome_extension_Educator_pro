@@ -18,7 +18,7 @@ app.head("/", (req, res) => {
   res.status(200).end();
 });
 
-// Function to perform a Google search
+// Function to perform a search
 async function performSearch(query, currentSite = null) {
   const searchApiKey = process.env.GOOGLE_SEARCH_API_KEY;
   const searchEngineId = process.env.GOOGLE_SEARCH_ENGINE_ID;
@@ -27,32 +27,27 @@ async function performSearch(query, currentSite = null) {
     throw new Error("Google Search API credentials not configured");
   }
   
-  // Add code-specific parameters if it appears to be a code search
-  const isCodeSearch = /\b(code|example|snippet|implementation|function|class|method|api|library|framework)\b/i.test(query);
+  // Prepare the search query
+  let finalQuery = query.trim();
+  if (!finalQuery) {
+    return "Please provide a search query.";
+  }
   
-  // Base search URL
-  let searchQuery = query;
-  
-  // If a specific site was provided and it's not a local domain, include it in the search
-  if (currentSite && 
+  // If a site was provided and it's not a local domain, add the site: operator
+  // but only if the query doesn't already include a site: operator
+  if (!finalQuery.toLowerCase().includes('site:') && 
+      currentSite && 
       !currentSite.includes('localhost') && 
       !currentSite.includes('127.0.0.1') &&
       !currentSite.includes('chrome-extension')) {
-    searchQuery = `site:${currentSite} ${query}`;
-    console.log(`Performing site-specific search for: ${searchQuery}`);
+    finalQuery = `site:${currentSite} ${finalQuery}`;
+    console.log(`Performing site-specific search for: ${finalQuery}`);
   } else {
-    console.log(`Performing general search for: ${query}`);
+    console.log(`Performing search for: ${finalQuery}`);
   }
   
   // Construct the search URL with appropriate parameters
-  let url = `https://www.googleapis.com/customsearch/v1?key=${searchApiKey}&cx=${searchEngineId}&q=${encodeURIComponent(searchQuery)}`;
-  
-  // For code searches, we want more detailed results
-  if (isCodeSearch) {
-    url += '&num=8'; // Get more results for code searches
-  } else {
-    url += '&num=5'; // Standard number for regular searches
-  }
+  const url = `https://www.googleapis.com/customsearch/v1?key=${searchApiKey}&cx=${searchEngineId}&q=${encodeURIComponent(finalQuery)}`;
   
   try {
     console.log(`Sending search request to URL: ${url}`);
@@ -65,54 +60,22 @@ async function performSearch(query, currentSite = null) {
     }
     
     // Format search results
-    let formattedResults = "Search Results:\n\n";
+    let formattedResults = `Search Results for "${finalQuery}":\n\n`;
     
     if (data.items && data.items.length > 0) {
-      // For code searches, analyze if any results are likely to contain code snippets
-      const codeSourceSites = ['github.com', 'stackoverflow.com', 'developer.mozilla.org', 'docs.python.org', 'w3schools.com', 'geeksforgeeks.org'];
-      
       data.items.forEach((item, index) => {
-        const isLikelyCodeSource = codeSourceSites.some(site => item.link.includes(site));
-        
         formattedResults += `${index + 1}. "${item.title}"\n`;
         formattedResults += `   URL: ${item.link}\n`;
-        
-        if (isLikelyCodeSource && isCodeSearch) {
-          formattedResults += `   CONTENT TYPE: Likely contains code examples\n`;
-        }
-        
         formattedResults += `   Snippet: ${item.snippet}\n\n`;
       });
-      
-      // Add site-specific note if applicable
-      if (currentSite && !currentSite.includes('localhost') && 
-          !currentSite.includes('127.0.0.1') &&
-          !currentSite.includes('chrome-extension')) {
-        formattedResults += `These results are specifically related to ${currentSite}.\n\n`;
-      }
-      
-      // Add guidance for code results
-      if (isCodeSearch) {
-        formattedResults += "SPECIAL INSTRUCTIONS FOR CODE RESULTS:\n";
-        formattedResults += "- Format any code examples with proper syntax highlighting using ```language\n";
-        formattedResults += "- Explain the key components of any code you share\n";
-        formattedResults += "- Cite the source website for any code examples\n\n";
-      }
     } else {
-      formattedResults += "No relevant results found.";
-      
-      // Suggest broadening search if site-specific search yielded no results
-      if (currentSite && !currentSite.includes('localhost') && 
-          !currentSite.includes('127.0.0.1') &&
-          !currentSite.includes('chrome-extension')) {
-        formattedResults += ` Try searching without the site:${currentSite} restriction for more general results.`;
-      }
+      formattedResults += "No results found.";
     }
     
     return formattedResults;
   } catch (error) {
     console.error("Search error:", error);
-    return `Error performing search: ${error.message}. Please check your Google Search API credentials in the .env file.`;
+    throw error;
   }
 }
 
@@ -230,37 +193,46 @@ app.post("/", async (req, res) => {
     if (forceSearch) {
       try {
         // Extract the search query from the message
-        const searchQuery = userMessage.substring(userMessage.indexOf("Please search for information about: ") + 40).split("\n")[0].trim();
+        const searchQuery = userMessage.includes("Please search for information about: ") 
+          ? userMessage.substring(userMessage.indexOf("Please search for information about: ") + 40).split("\n")[0].trim()
+          : userMessage.trim();
         
         // Get the current site if provided
         const currentSite = req.body.currentSite || null;
         
-        // Perform the search with site context if available
-        const searchResults = await performSearch(searchQuery, currentSite);
-        
-        console.log("Search completed, generating response...");
-        
-        // Create a prompt with the search results
-        const promptWithResults = `I searched for "${searchQuery}" ${currentSite ? `on ${currentSite}` : ''} and found these results:\n\n${searchResults}\n\nPlease analyze these results and provide a helpful response. If there are code examples, format them properly.`;
-        
-        // Use generateContent instead of streaming for better reliability
-        const result = await model.generateContent({
-          contents: [{ role: "user", parts: [{ text: promptWithResults }] }],
-          generationConfig,
-        });
-        
-        const response = result.response;
-        if (response.text) {
-          console.log("Sending search response to client");
-          res.write(response.text());
+        try {
+          // Perform the search with site context if available
+          const searchResults = await performSearch(searchQuery, currentSite);
+          
+          console.log("Search completed, generating response...");
+          
+          // Create a prompt with the search results
+          const promptWithResults = `I searched for "${searchQuery}" ${currentSite ? `on ${currentSite}` : ''} and found these results:\n\n${searchResults}\n\nPlease analyze these results and provide a helpful response. If there are code examples, format them properly.`;
+          
+          // Use generateContent instead of streaming for better reliability
+          const result = await model.generateContent({
+            contents: [{ role: "user", parts: [{ text: promptWithResults }] }],
+            generationConfig,
+          });
+          
+          const response = result.response;
+          if (response.text) {
+            console.log("Sending search response to client");
+            res.write(response.text());
+            res.end();
+            return;
+          } else {
+            throw new Error("No text found in search response");
+          }
+        } catch (searchError) {
+          console.error("Search error:", searchError);
+          res.write(`Error performing search: ${searchError.message}`);
           res.end();
           return;
-        } else {
-          throw new Error("No text found in search response");
         }
-      } catch (searchError) {
-        console.error("Search error:", searchError);
-        res.write("Sorry, I encountered an error when searching. " + searchError.message);
+      } catch (error) {
+        console.error("Error processing search request:", error);
+        res.write(`Error processing search request: ${error.message}`);
         res.end();
         return;
       }

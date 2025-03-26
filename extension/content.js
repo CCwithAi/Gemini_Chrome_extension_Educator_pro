@@ -137,6 +137,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message.type === "CODE_TESTER") {
     // Handle Code-Tester activation
     activateCodeTester();
+  } else if (message.type === "PERFORM_SEARCH") {
+    const results = performDirectPageSearch(message.query);
+    showSearchResults(results);
+    return true;
   }
 });
 
@@ -415,24 +419,20 @@ function openChatOverlay() {
     messagesContainer.appendChild(loadingDiv);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
     
-    // Get page context
-    const pageContext = getPageContext();
-    
-    // Create a search-specific prompt with current site context
+    // Get the current site
     const currentSite = window.location.hostname;
-    const searchPrompt = `Please search for information about: ${currentText} (specifically related to ${currentSite} if relevant)\n\n${pageContext}`;
     
-    // Send to server with explicit search request
+    // Send the search request directly
     fetch('http://localhost:3000', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ 
-        message: searchPrompt,
+        message: currentText,
         feature: "chat",
         forceSearch: true,
-        currentSite: currentSite // Pass the current site
+        currentSite: currentSite
       })
     })
     .then(response => {
@@ -1128,5 +1128,116 @@ function createCodeTesterDialog(text) {
   
   // Add to the page
   document.body.appendChild(backdrop);
+  document.body.appendChild(dialog);
+}
+
+// Function to perform a direct page search
+function performDirectPageSearch(query) {
+  const cleanQuery = query.trim().toLowerCase();
+  if (!cleanQuery) return [];
+  
+  // Get all text content from the page
+  const pageContent = document.body.innerText;
+  const paragraphs = document.body.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, td, th, div');
+  
+  // Store matches with their context
+  const matches = [];
+  
+  // Search through all paragraph elements
+  paragraphs.forEach(element => {
+    const text = element.innerText;
+    if (text.toLowerCase().includes(cleanQuery)) {
+      // Get some context around the match
+      const index = text.toLowerCase().indexOf(cleanQuery);
+      const start = Math.max(0, index - 50);
+      const end = Math.min(text.length, index + cleanQuery.length + 50);
+      let context = text.slice(start, end);
+      
+      // Add ellipsis if we trimmed the text
+      if (start > 0) context = '...' + context;
+      if (end < text.length) context += '...';
+      
+      // Highlight the matched text
+      const highlightedContext = context.replace(
+        new RegExp(cleanQuery, 'gi'),
+        match => `<mark>${match}</mark>`
+      );
+      
+      matches.push({
+        element: element,
+        context: highlightedContext
+      });
+    }
+  });
+  
+  return matches;
+}
+
+// Function to display search results in a dialog
+function showSearchResults(results) {
+  // Remove any existing results dialog
+  const existingDialog = document.getElementById('page-search-results');
+  if (existingDialog) existingDialog.remove();
+  
+  // Create results dialog
+  const dialog = document.createElement('div');
+  dialog.id = 'page-search-results';
+  dialog.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    max-width: 400px;
+    max-height: 80vh;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    z-index: 10000;
+    overflow-y: auto;
+    padding: 16px;
+  `;
+  
+  // Add results to dialog
+  if (results.length > 0) {
+    results.forEach((result, index) => {
+      const resultDiv = document.createElement('div');
+      resultDiv.style.marginBottom = '16px';
+      resultDiv.style.padding = '8px';
+      resultDiv.style.borderBottom = '1px solid #eee';
+      resultDiv.innerHTML = `
+        <div style="margin-bottom: 8px;">Result ${index + 1}:</div>
+        <div>${result.context}</div>
+      `;
+      
+      // Add click handler to scroll to the result
+      resultDiv.addEventListener('click', () => {
+        result.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        result.element.style.backgroundColor = '#fff3cd';
+        setTimeout(() => {
+          result.element.style.backgroundColor = '';
+        }, 2000);
+      });
+      
+      dialog.appendChild(resultDiv);
+    });
+  } else {
+    dialog.innerHTML = '<div style="padding: 16px;">No results found on this page.</div>';
+  }
+  
+  // Add close button
+  const closeButton = document.createElement('button');
+  closeButton.textContent = '×';
+  closeButton.style.cssText = `
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    border: none;
+    background: none;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px 8px;
+  `;
+  closeButton.onclick = () => dialog.remove();
+  dialog.appendChild(closeButton);
+  
   document.body.appendChild(dialog);
 }
