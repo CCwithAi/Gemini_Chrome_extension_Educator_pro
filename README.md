@@ -1,4 +1,5 @@
-![Gemini Assistant Icon] 
+markdown
+![Gemini Assistant Chrome Extension Logo](extension/icon.png)
 
 # Gemini Assistant v1.1
 
