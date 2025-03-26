@@ -2,12 +2,13 @@ import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
 import dotenv from "dotenv-safe";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import fetch from "node-fetch";
 import config from "./config.js";
 import Default from "./plugins/Default.js";
 import GeneralAssistant from "./plugins/GeneralAssistant.js";
 import CodeTeacher from "./plugins/CodeTeacher.js";
+import Image from "./plugins/Image.js";
 dotenv.config();
 
 const app = express().use(cors()).use(bodyParser.json({ limit: '10mb' }));
@@ -406,6 +407,29 @@ app.post("/", async (req, res) => {
       error: error.message,
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
+  }
+});
+
+// Update the image generation endpoint
+app.post("/generate-image", async (req, res) => {
+  try {
+    const prompt = req.body.prompt;
+    console.log("Generating image for prompt:", prompt);
+
+    // Use the Image class static method instead of duplicating the implementation
+    const imageResult = await Image.generateImage(prompt);
+    
+    if (imageResult && imageResult.data && imageResult.mimeType) {
+      // Convert base64 to buffer and return
+      const imageBuffer = Buffer.from(imageResult.data, 'base64');
+      res.setHeader('Content-Type', imageResult.mimeType);
+      res.send(imageBuffer);
+    } else {
+      throw new Error("No image data found in response");
+    }
+  } catch (error) {
+    console.error("Image generation error:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 

@@ -17,6 +17,12 @@ chrome.contextMenus.create({
   contexts: ["page"],
 });
 
+chrome.contextMenus.create({
+  id: "generate-image",
+  title: "Generate Image",
+  contexts: ["selection"],
+});
+
 // Listen for when the user clicks on the context menu items
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "ask-gemini") {
@@ -28,5 +34,8 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   } else if (info.menuItemId === "code-tester") {
     // Send message to content script to activate the Code-Tester
     chrome.tabs.sendMessage(tab.id, { type: "CODE_TESTER" });
+  } else if (info.menuItemId === "generate-image") {
+    // Send a message to the content script to handle image generation
+    chrome.tabs.sendMessage(tab.id, { type: "GENERATE_IMAGE", text: info.selectionText });
   }
 });

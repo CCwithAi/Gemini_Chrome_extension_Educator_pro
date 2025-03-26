@@ -141,6 +141,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const results = performDirectPageSearch(message.query);
     showSearchResults(results);
     return true;
+  } else if (message.type === "GENERATE_IMAGE") {
+    handleImageGeneration(message.text);
   }
 });
 
@@ -492,6 +494,16 @@ function openChatOverlay() {
     const message = textInput.value.trim();
     if (!message) return;
 
+    // Check if this is an image generation request
+    if (message.toLowerCase().includes('generate image') || 
+        message.toLowerCase().includes('create image') ||
+        message.toLowerCase().includes('generate an image') ||
+        message.toLowerCase().includes('create an image')) {
+      addMessageToChat("I cannot generate images in chat. Please use the right-click menu and select 'Generate Image' on your selected text.", 'ai');
+      textInput.value = '';
+      return;
+    }
+
     // Add user message to chat
     addMessageToChat(message, 'user');
     
@@ -600,7 +612,7 @@ function openChatOverlay() {
 
   // Update initial welcome message
   setTimeout(() => {
-    addMessageToChat("Hi! I'm your Gemini Assistant. I can help with emails, code explanation, social media content, and more. How can I assist you today?", 'ai');
+    addMessageToChat("Hi! I'm your Gemini Assistant. I can help with emails, code explanation, social media content, and more. For image generation, please use the right-click menu and select 'Generate Image' on your selected text.", 'ai');
   }, 100);
 
   // Add CSS for loading animation
@@ -1239,4 +1251,86 @@ function showSearchResults(results) {
   dialog.appendChild(closeButton);
   
   document.body.appendChild(dialog);
+}
+
+// Function to handle image generation
+async function handleImageGeneration(text) {
+  showLoadingCursor();
+
+  try {
+    const response = await fetch("http://localhost:3000/generate-image", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ 
+        prompt: text,
+        feature: "image"
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server responded with ${response.status}`);
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    
+    // Create a temporary link to trigger download
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `generated-image-${Date.now()}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    restoreCursor();
+  } catch (error) {
+    restoreCursor();
+    console.error("Image generation error:", error);
+    alert("Error generating image. Please try again.");
+  }
+}
+
+async function generateImage(prompt) {
+  try {
+    const response = await fetch('http://localhost:3000/generate-image', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ prompt }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to generate image');
+    }
+
+    // Get the image blob
+    const imageBlob = await response.blob();
+    
+    // Create object URL
+    const imageUrl = URL.createObjectURL(imageBlob);
+    
+    // Create and display image element
+    const imageElement = document.createElement('img');
+    imageElement.src = imageUrl;
+    imageElement.style.maxWidth = '100%';
+    imageElement.style.height = 'auto';
+    imageElement.style.marginTop = '10px';
+    
+    // Add to chat container
+    const chatContainer = document.querySelector('.chat-container');
+    if (chatContainer) {
+      chatContainer.appendChild(imageElement);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    return imageUrl;
+  } catch (error) {
+    console.error('Error generating image:', error);
+    throw error;
+  }
 }

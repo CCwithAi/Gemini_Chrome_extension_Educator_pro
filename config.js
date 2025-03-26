@@ -14,8 +14,8 @@ const config = {
     Search,
     // Code Teacher for quiz generation
     CodeTeacher,
-    // Add image generation ability (commented out for now)
-    //Image,
+    // Add image generation ability
+    Image,
   ],
   // Gemini model configuration
   geminiModel: "gemini-2.0-flash",
