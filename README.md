@@ -1,4 +1,4 @@
-[extension/icon.png]
+* ![Gemini Assistant Icon] 
 
 # Gemini Assistant v1.1
 
