@@ -201,6 +201,11 @@ const restoreCursor = () => {
   document.getElementById("cursor_wait").remove();
 };
 
+// Add at the top of the file
+function generateSessionId() {
+  return 'chat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+}
+
 // Function to create and open a chat overlay
 function openChatOverlay() {
   // Check if the overlay already exists
@@ -208,6 +213,9 @@ function openChatOverlay() {
     document.getElementById('gemini-chat-overlay').style.display = 'flex';
     return;
   }
+
+  // Generate a unique session ID for this chat
+  const sessionId = generateSessionId();
 
   // Detect if the page is using a dark theme
   const prefersDarkTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -479,7 +487,7 @@ function openChatOverlay() {
     });
   };
 
-  // Add send button functionality
+  // Update the send button functionality
   sendButton.onclick = function() {
     const message = textInput.value.trim();
     if (!message) return;
@@ -496,16 +504,6 @@ function openChatOverlay() {
     // Format the prompt
     const formattedPrompt = `${message}\n\n${pageContext}`;
 
-    // *** PLACEHOLDER FOR FUTURE TOOL FUNCTIONS ***
-    // This is where we would process special commands or tool invocations
-    // Example:
-    // if (message.startsWith("/image ")) {
-    //   // Handle image generation
-    //   const imagePrompt = message.substring(7);
-    //   generateAndDisplayImage(imagePrompt, messagesContainer);
-    //   return;
-    // }
-
     // Add loading indicator
     const loadingDiv = document.createElement('div');
     loadingDiv.className = 'gemini-ai-message';
@@ -513,7 +511,7 @@ function openChatOverlay() {
     messagesContainer.appendChild(loadingDiv);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-    // Send to server
+    // Send to server with session ID
     fetch('http://localhost:3000', {
       method: 'POST',
       headers: {
@@ -521,7 +519,8 @@ function openChatOverlay() {
       },
       body: JSON.stringify({ 
         message: formattedPrompt,
-        feature: "chat"  // Specify this is the Chat with Gemini feature
+        feature: "chat",
+        sessionId: sessionId  // Include the session ID
       })
     })
     .then(response => {

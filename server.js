@@ -18,6 +18,30 @@ app.head("/", (req, res) => {
   res.status(200).end();
 });
 
+// Add at the top with other imports
+const chatSessions = new Map();
+
+// Function to get or create a chat session
+function getOrCreateChatSession(sessionId) {
+  if (!chatSessions.has(sessionId)) {
+    chatSessions.set(sessionId, {
+      history: [],
+      lastInteraction: Date.now()
+    });
+  }
+  return chatSessions.get(sessionId);
+}
+
+// Clean up old sessions periodically (e.g., every hour)
+setInterval(() => {
+  const oneHourAgo = Date.now() - (60 * 60 * 1000);
+  for (const [sessionId, session] of chatSessions.entries()) {
+    if (session.lastInteraction < oneHourAgo) {
+      chatSessions.delete(sessionId);
+    }
+  }
+}, 60 * 60 * 1000);
+
 // Function to perform a search
 async function performSearch(query, currentSite = null) {
   const searchApiKey = process.env.GOOGLE_SEARCH_API_KEY;
@@ -161,33 +185,67 @@ async function verifySearchCredentials() {
 
 app.post("/", async (req, res) => {
   try {
-    // Initialize the Google Generative AI
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    
-    // Get the model with the exact name from the example
     const model = genAI.getGenerativeModel({ 
       model: "gemini-2.0-flash",
     });
     
     const userMessage = req.body.message;
     const feature = req.body.feature || "default";
-    const forceSearch = req.body.forceSearch || false; // Check if search is forced
+    const forceSearch = req.body.forceSearch || false;
+    const sessionId = req.body.sessionId; // New: Get session ID from request
     
     console.log(`Processing ${feature} request`);
-    
     console.log(`Received ${feature} prompt (first 100 chars):`, userMessage.substring(0, 100) + "...");
     
-    // Set up streaming response
     res.setHeader('Content-Type', 'text/plain');
     res.setHeader('Transfer-Encoding', 'chunked');
     
-    // Use appropriate generation config for gemini-2.0-flash
     const generationConfig = {
       temperature: 0.7,
       topP: 0.95,
       topK: 40,
       maxOutputTokens: 8192,
     };
+
+    // Get or create chat session
+    const session = sessionId ? getOrCreateChatSession(sessionId) : null;
+    
+    // If this is a chat feature and we have a session, use the conversation history
+    if (feature === "chat" && session) {
+      try {
+        // Create a chat session with history
+        const chatSession = model.startChat({
+          history: session.history,
+          generationConfig,
+        });
+
+        // Add user message to history
+        session.history.push({ role: "user", parts: [{ text: userMessage }] });
+        
+        // Get response
+        const result = await chatSession.sendMessage(userMessage);
+        
+        if (result.response && result.response.text) {
+          const responseText = result.response.text();
+          
+          // Add AI response to history
+          session.history.push({ role: "model", parts: [{ text: responseText }] });
+          
+          // Update last interaction time
+          session.lastInteraction = Date.now();
+          
+          res.write(responseText);
+          res.end();
+          return;
+        }
+      } catch (chatError) {
+        console.error("Chat error:", chatError);
+        res.write("I apologize, but I had trouble maintaining our conversation. Let me try a fresh start.");
+        res.end();
+        return;
+      }
+    }
     
     // If search is forced, perform it directly
     if (forceSearch) {
