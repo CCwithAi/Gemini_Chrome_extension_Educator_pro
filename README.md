@@ -1,3 +1,5 @@
+[extension/icon.png]
+
 # Gemini Assistant v1.1
 
 Works with Google Chrome and Microsoft Edge.
