@@ -7,6 +7,7 @@
 - Educator Pro Mode: Generate quiz questions from code-related content
 - Theme support (light/dark)
 - Markdown formatting and syntax highlighting
+- Search the web without leaving the page your on
 
 ## Installation Instructions
 
