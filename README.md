@@ -114,4 +114,16 @@ The extension uses a plugin API system for customized functionality:
 - Verify your API keys are correctly set in the .env file
 - Make sure port 3000 is not being used by another application
 
+**Privacy Statement for gemini chrome plug in**
+
+Effective Date: 26.03.25
+
+This statement describes how CCwithAI ("we", "us", "our") handles data when you use our software application.
+
+**Data Sent to Third Parties:**
+To provide its core functionality, CCwithAI sends data you input or generate within the application via an Application Programming Interface (API) to Google AI models (operated by Google LLC or its affiliates).
+
+**Use of Data by Google:**
+According according to Google's terms and policies governing the use of their AI APIs, data sent to these APIs *may* be used by Google for service improvement, which *can include* the training of their AI models. We do not control how Google uses this data beyond the configurations available through their API services. We strongly recommend you review Google's relevant API terms of service and privacy policies for detailed information.
+
 MIT © [CCwithAI]
