@@ -1,0 +1,116 @@
+# Gemini Assistant v1.1
+
+## Features
+- Chat with Gemini about webpage content
+- Get code explanations and analysis
+- SiteSearch: Search within the context of the current website
+- Educator Pro Mode: Generate quiz questions from code-related content
+- Theme support (light/dark)
+- Markdown formatting and syntax highlighting
+
+## Installation Instructions
+
+### Prerequisites
+- Node.js v16.0.0 or higher
+- npm or yarn
+- Google Gemini API key (create one at [Google AI Studio](https://aistudio.google.com/))
+- Google Custom Search API key and Search Engine ID (for search functionality)
+
+### Setup Steps
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/CCwithAi/Gemini_Chrome_extension_Educator_pro.git
+   
+   cd gemini-chrome-extension
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   # or if you use yarn
+   yarn install
+   ```
+
+3. **Configure environment variables**
+   - Copy the `.env.example` file to `.env`
+   ```bash
+   cp .env.example .env
+   ```
+   - Edit the `.env` file and add your API keys:
+   ```
+   GEMINI_API_KEY=your_gemini_api_key
+   GOOGLE_SEARCH_API_KEY=your_google_search_api_key
+   GOOGLE_SEARCH_ENGINE_ID=your_search_engine_id
+   ```
+
+4. **Start the server**
+   ```bash
+   npm start
+   # or if you use yarn
+   yarn start
+   ```
+   You should see: `Chrome Gemini API listening on port 3000`
+
+5. **Load the extension in Chrome**
+   - Open Chrome and navigate to `chrome://extensions/`
+   - Enable "Developer mode" using the toggle in the top-right corner
+   - Click "Load unpacked" and select the `extension` folder from this repository
+   - The Gemini Assistant extension should now appear in your extensions list
+
+6. **Using the extension**
+   - Click on the Gemini Assistant icon in your extensions toolbar to open the popup
+   - Right-click on any webpage and select "Chat with Gemini" to open the chat overlay
+   - Select text and right-click to "Ask Gemini" about the selection
+   - Right-click on any page and select "Educator Pro Mode" to generate code quizzes
+
+## Plugins
+The extension uses a plugin API system for customized functionality:
+
+- Default - Code explanation, analysis, and best practices
+- GeneralAssistant - General help with emails, writing, research, and more
+- Search - Web search integration using Google Custom Search
+- CodeTeacher - Generate educational quizzes and assessments for code learning
+- Image - (coming soon) Image generation capabilities
+
+## Security Measures
+- Local API server to protect credentials from client-side exposure
+- Environment variables for sensitive API keys
+- Input validation for search queries
+- Error handling for failed API requests
+- HTML content sanitization to prevent XSS attacks
+- Content Security Policy implementation
+
+## Potential Security Considerations
+- API Key Management
+  - ✅ Keys are stored server-side, not in the extension
+  - ⚠️ Consider using a more secure method than .env files for production
+
+- Content Security
+  - ✅ HTML content is properly sanitized
+  - ✅ Content Security Policy headers implemented
+
+- Data Privacy
+  - ⚠️ Page content is sent to external APIs
+  - Recommendation: Add a privacy policy explaining data handling
+
+- Cross-Origin Requests
+  - ✅ CORS is properly configured for local development
+  - ⚠️ For production, ensure proper CORS policies are in place
+
+- Extension Permissions
+  - ✅ Uses only necessary permissions
+
+## Best Practices for Production
+- Add rate limiting to prevent API abuse
+- Implement proper error logging that doesn't expose sensitive information
+- Regularly update dependencies to patch security vulnerabilities
+- Add automated security scanning to your development pipeline
+
+## Troubleshooting
+- If you see "Not connected" in the popup, ensure the server is running
+- Check the browser console for any error messages
+- Verify your API keys are correctly set in the .env file
+- Make sure port 3000 is not being used by another application
+
+MIT © [CCwithAI]

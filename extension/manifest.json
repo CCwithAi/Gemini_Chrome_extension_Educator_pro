@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Gemini Assistant",
+  "version": "1.1",
+  "description": "Chat with Gemini about webpage content, get code explanations, use SiteSearch, and access Educator Pro Mode",
+  "permissions": ["contextMenus", "activeTab", "scripting"],
+  "host_permissions": ["http://localhost:3000/"],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' http://localhost:3000 https://*.googleapis.com"
+  },
+  "icons": {
+    "48": "icon.png",
+    "128": "icon.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "icon.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ]
+}

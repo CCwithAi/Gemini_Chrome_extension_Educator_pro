@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Gemini Chat</title>
+  <style>
+    body {
+      width: 350px;
+      height: 500px;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    #chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+      overflow: hidden;
+    }
+    
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      margin-bottom: 10px;
+      padding: 10px;
+      background-color: #f5f5f5;
+      border-radius: 5px;
+    }
+    
+    .message {
+      margin-bottom: 10px;
+      padding: 8px 12px;
+      border-radius: 18px;
+      max-width: 80%;
+      word-wrap: break-word;
+    }
+    
+    .user-message {
+      background-color: #DCF8C6;
+      align-self: flex-end;
+      margin-left: auto;
+    }
+    
+    .ai-message {
+      background-color: #ECECEC;
+      align-self: flex-start;
+    }
+    
+    #input-container {
+      display: flex;
+      margin-top: 10px;
+    }
+    
+    #user-input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      margin-right: 5px;
+      resize: none;
+    }
+    
+    #send-button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    
+    #send-button:hover {
+      background-color: #45a049;
+    }
+    
+    code {
+      background-color: #f0f0f0;
+      padding: 2px 4px;
+      border-radius: 3px;
+      font-family: monospace;
+    }
+    
+    pre {
+      background-color: #f0f0f0;
+      padding: 8px;
+      border-radius: 5px;
+      overflow-x: auto;
+      font-family: monospace;
+    }
+    
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(0,0,0,.1);
+      border-radius: 50%;
+      border-top-color: #4CAF50;
+      animation: spin 1s ease-in-out infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div id="header">
+    <h1>Gemini Assistant</h1>
+    <span class="version">v1.1</span>
+  </div>
+  <div id="chat-container">
+    <div id="messages">
+      <div class="message ai-message">Hi! I'm Gemini. How can I help you today?</div>
+      <div class="message ai-message" style="color: #666; font-size: 0.9em;">Server status: <span id="server-status">Checking...</span></div>
+    </div>
+    <div id="input-container">
+      <textarea id="user-input" placeholder="Type your message here..." rows="2"></textarea>
+      <button id="send-button">Send</button>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+  <script>
+    // Check server status on load
+    fetch('http://localhost:3000', { method: 'HEAD' })
+      .then(response => {
+        if (response.ok) {
+          document.getElementById('server-status').textContent = 'Connected';
+          document.getElementById('server-status').style.color = 'green';
+        } else {
+          document.getElementById('server-status').textContent = 'Error: ' + response.status;
+          document.getElementById('server-status').style.color = 'red';
+        }
+      })
+      .catch(error => {
+        document.getElementById('server-status').textContent = 'Not connected';
+        document.getElementById('server-status').style.color = 'red';
+      });
+  </script>
+</body>
+</html> 
