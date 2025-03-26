@@ -93,7 +93,7 @@ The extension uses a plugin API system for customized functionality:
 
 - Data Privacy
   - ⚠️ Page content is sent to external APIs
-  - Recommendation: Add a privacy policy explaining data handling
+  - ✅ Add a privacy policy explaining data handling
 
 - Cross-Origin Requests
   - ✅ CORS is properly configured for local development
