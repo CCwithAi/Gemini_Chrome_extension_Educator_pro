@@ -16,7 +16,10 @@ Works with Google Chrome and Microsoft Edge.
 - Future updates
 - Long term Chat History - Memo
 - Structured Course Content and Progress tracking.
-- Search the web without leaving the page your on (perplexity)
+- Deep Search the web without leaving the page your on (perplexity)
+- Hosted DB Agentic backend with new frameworks.
+- Backend Hosted Pro (paid Version)
+  
 
 ## Installation Instructions
 
