@@ -11,11 +11,12 @@ Works with Google Chrome and Microsoft Edge.
 - Educator Pro Mode: Generate quiz questions from code-related content
 - Theme support (light/dark)
 - Markdown formatting and syntax highlighting
-- Search the web without leaving the page your on
+- Image generation
 
 - Future updates
-- Image generation
 - Long term Chat History - Memo
+- Structured Course Content and Progress tracking.
+- Search the web without leaving the page your on (perplexity)
 
 ## Installation Instructions
 
