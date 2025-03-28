@@ -12,7 +12,7 @@ Works with Google Chrome and Microsoft Edge.
 - Theme support (light/dark)
 - Markdown formatting and syntax highlighting
 - Image generation
-
+<b>
 - Future updates
 - Long term Chat History - Memo
 - Structured Course Content and Progress tracking.
