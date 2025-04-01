@@ -181,15 +181,8 @@ END OF PAGE CONTEXT`;
 
 // Function to format the prompt with the user's text and page context
 function formatPrompt(selectedText, pageContext) {
-  return `I have selected the following text:
-
----
-${selectedText}
----
-
-${pageContext}
-
-Based on the selected text and page context, please provide a helpful response. If the selected text is code, please explain what it does in a beginner-friendly way.`;
+  // Enhanced instructions for the AI
+  return `\nINSTRUCTIONS:\n1. Explain the following code snippet found on the webpage described in the context.\n2. Focus ONLY on explaining the provided code snippet.\n3. Provide the explanation in a beginner-friendly, step-by-step manner.\n4. Do NOT include any HTML elements or CSS styles in your explanation text itself.\n5. Use markdown for formatting (like \`\`\` for code blocks or * for italics). Do not use HTML tags.\n\nSELECTED CODE SNIPPET:\n---\n${selectedText}\n---\n\n${pageContext}\n\nEXPLANATION:\n`;
 }
 
 const showLoadingCursor = () => {
@@ -699,146 +692,89 @@ function createResponseDialog(text) {
     codeText: useDarkTheme ? '#E0E0E0' : '#333333',
   };
 
-  // Create dialog container
-  const dialog = document.createElement('div');
-  dialog.id = 'gemini-response-dialog';
-  dialog.style.cssText = `
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 80%;
-    max-width: 600px;
-    max-height: 80vh;
-    background-color: ${theme.background};
-    border-radius: 10px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    z-index: 10001;
-    display: flex;
-    flex-direction: column;
-    font-family: Arial, sans-serif;
-    overflow: hidden;
-    color: ${theme.text};
-  `;
-
-  // Create header
-  const header = document.createElement('div');
-  header.style.cssText = `
-    padding: 15px;
-    background-color: ${theme.header};
-    color: ${theme.headerText};
-    font-weight: bold;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  `;
-  header.textContent = 'Gemini Response';
-
-  // Create close button
-  const closeButton = document.createElement('button');
-  closeButton.innerHTML = '&times;';
-  closeButton.style.cssText = `
-    background: none;
-    border: none;
-    color: ${theme.headerText};
-    font-size: 20px;
-    cursor: pointer;
-  `;
-  closeButton.onclick = function() {
-    dialog.remove();
-    // Remove backdrop
-    document.getElementById('gemini-dialog-backdrop').remove();
-  };
-  header.appendChild(closeButton);
-
-  // Create content area
-  const content = document.createElement('div');
-  content.style.cssText = `
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px;
-    background-color: ${theme.messageArea};
-    word-wrap: break-word;
-    white-space: pre-wrap;
-    max-height: 60vh;
-    scrollbar-width: thin;
-    scrollbar-color: ${theme.header} ${theme.messageArea};
-  `;
-
-  // Create a sanitization function with access to the theme
-  function sanitizeDialogHTML(text, theme) {
-    // Create a temporary div element
-    const tempDiv = document.createElement('div');
-    tempDiv.textContent = text;
-    const sanitizedText = tempDiv.innerHTML;
-    
-    return sanitizedText
-      // Code blocks - ensure content is sanitized inside
-      .replace(/```([\s\S]*?)```/g, (match, codeContent) => {
-        const sanitizedCode = document.createElement('div');
-        sanitizedCode.textContent = codeContent;
-        return `<pre style="background-color: ${theme.codeBg}; color: ${theme.codeText}; padding: 8px; border-radius: 5px; overflow-x: auto; font-family: monospace;">${sanitizedCode.innerHTML}</pre>`;
-      })
-      // Inline code
-      .replace(/`([^`]+)`/g, (match, codeContent) => {
-        const sanitizedCode = document.createElement('div');
-        sanitizedCode.textContent = codeContent;
-        return `<code style="background-color: ${theme.codeBg}; color: ${theme.codeText}; padding: 2px 4px; border-radius: 3px; font-family: monospace;">${sanitizedCode.innerHTML}</code>`;
-      })
-      // Bold
-      .replace(/\*\*(.*?)\*\*/g, (match, content) => {
-        const sanitizedContent = document.createElement('div');
-        sanitizedContent.textContent = content;
-        return `<strong>${sanitizedContent.innerHTML}</strong>`;
-      })
-      // Italic
-      .replace(/\*(.*?)\*/g, (match, content) => {
-        const sanitizedContent = document.createElement('div');
-        sanitizedContent.textContent = content;
-        return `<em>${sanitizedContent.innerHTML}</em>`;
-      })
-      // Line breaks
-      .replace(/\n/g, '<br>');
-  }
-  
-  // Use the function with current theme
-  const formattedText = sanitizeDialogHTML(text, theme);
-  content.innerHTML = formattedText;
-
-  // Create a semi-transparent backdrop
-  const backdrop = document.createElement('div');
-  backdrop.id = 'gemini-dialog-backdrop';
-  backdrop.style.cssText = `
+  // Create host element for the Shadow DOM
+  const host = document.createElement('div');
+  host.id = 'gemini-response-dialog-host';
+  host.style.cssText = `
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 10000;
+    z-index: 10000; /* Ensure backdrop is below dialog */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.5); /* Backdrop */
   `;
-  
-  // Close when clicking backdrop
-  backdrop.onclick = function(e) {
-    if (e.target === backdrop) {
-      dialog.remove();
-      backdrop.remove();
-    }
-  };
 
-  // Add copy button
+  // Attach Shadow Root
+  const shadow = host.attachShadow({ mode: 'open' });
+
+  // Create dialog container within the Shadow DOM
+  const dialog = document.createElement('div');
+  dialog.id = 'gemini-response-dialog'; // Keep ID for potential direct styling if needed
+  // Removed inline styles, will be applied via <style> tag
+
+  // Create header
+  const header = document.createElement('div');
+  // Removed inline styles
+  header.textContent = 'Gemini Response';
+
+  // Create close button
+  const closeButton = document.createElement('button');
+  closeButton.innerHTML = '&times;';
+  // Removed inline styles
+  closeButton.onclick = function() {
+    host.remove(); // Remove the host element which contains the shadow DOM
+  };
+  header.appendChild(closeButton);
+
+  // Create content area
+  const content = document.createElement('div');
+  // Removed inline styles
+
+  // Sanitization function
+  function sanitizeDialogHTML(text, theme) {
+    // 1. Escape HTML characters first to treat the incoming text as plain text
+    const tempDiv = document.createElement('div');
+    tempDiv.textContent = text;
+    let escapedText = tempDiv.innerHTML;
+
+    // 2. Now apply markdown-like formatting to the escaped text
+    return escapedText
+      // Code blocks ```...```
+      .replace(/```([\s\S]*?)```/g, (match, codeContent) => {
+        // Double-check escaping inside code blocks if needed, though textContent usually handles it
+        const pre = document.createElement('pre');
+        pre.style.cssText = `background-color: ${theme.codeBg}; color: ${theme.codeText}; padding: 10px; border-radius: 5px; overflow-x: auto; font-family: monospace; font-size: 0.9em; white-space: pre; word-wrap: normal;`;
+        pre.textContent = codeContent; // Use textContent to prevent rendering HTML inside code block
+        return pre.outerHTML;
+      })
+      // Inline code `...`
+      .replace(/`([^`]+)`/g, (match, codeContent) => {
+        const code = document.createElement('code');
+        code.style.cssText = `background-color: ${theme.codeBg}; color: ${theme.codeText}; padding: 2px 4px; border-radius: 3px; font-family: monospace; font-size: 0.9em;`;
+        code.textContent = codeContent;
+        return code.outerHTML;
+      })
+      // Bold **...**
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      // Italic *...*
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      // Line breaks
+      .replace(/\n/g, '<br>');
+  }
+
+  // Use the function with current theme
+  const formattedText = sanitizeDialogHTML(text, theme);
+  content.innerHTML = formattedText;
+
+  // Create copy button
   const copyButton = document.createElement('button');
   copyButton.textContent = 'Copy Response';
-  copyButton.style.cssText = `
-    background-color: ${theme.header};
-    color: white;
-    border: none;
-    border-radius: 5px;
-    padding: 8px 15px;
-    margin: 10px 20px 15px auto;
-    cursor: pointer;
-    display: block;
-  `;
+  // Removed inline styles
+
   copyButton.onclick = function() {
     navigator.clipboard.writeText(text).then(function() {
       copyButton.textContent = 'Copied!';
@@ -848,14 +784,116 @@ function createResponseDialog(text) {
     });
   };
 
-  // Assemble the dialog
+  // Create style element for Shadow DOM
+  const style = document.createElement('style');
+  style.textContent = `
+    :host { /* Styles for the host element itself (optional) */
+      font-family: sans-serif; /* Set a base font family */
+    }
+    div#gemini-response-dialog { /* Target the dialog inside shadow DOM */
+      width: 80%;
+      max-width: 600px;
+      max-height: 80vh;
+      background-color: ${theme.background};
+      color: ${theme.text};
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      z-index: 10001; /* Ensure dialog is above backdrop */
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      font-size: 16px; /* Default readable font size */
+      line-height: 1.5; /* Default readable line height */
+    }
+    div#gemini-response-dialog > div:first-of-type { /* Header styles */
+      padding: 15px;
+      background-color: ${theme.header};
+      color: ${theme.headerText};
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0; /* Prevent header from shrinking */
+    }
+    div#gemini-response-dialog > div:first-of-type button { /* Close button styles */
+      background: none;
+      border: none;
+      color: ${theme.headerText};
+      font-size: 20px;
+      cursor: pointer;
+    }
+    div#gemini-response-dialog > div:nth-of-type(2) { /* Content area styles */
+      flex: 1; /* Allow content to grow */
+      overflow-y: auto;
+      padding: 20px;
+      background-color: ${theme.messageArea};
+      word-wrap: break-word;
+      white-space: pre-wrap; /* Keep line breaks from response */
+      max-height: calc(80vh - 100px); /* Adjust max-height considering header/footer */
+      scrollbar-width: thin;
+      scrollbar-color: ${theme.header} ${theme.messageArea};
+    }
+     /* Webkit scrollbar styles */
+    div#gemini-response-dialog > div:nth-of-type(2)::-webkit-scrollbar {
+      width: 8px;
+    }
+    div#gemini-response-dialog > div:nth-of-type(2)::-webkit-scrollbar-track {
+      background: ${theme.messageArea};
+    }
+    div#gemini-response-dialog > div:nth-of-type(2)::-webkit-scrollbar-thumb {
+      background-color: ${theme.header};
+      border-radius: 4px;
+      border: 2px solid ${theme.messageArea};
+    }
+    div#gemini-response-dialog > button { /* Copy button styles */
+      background-color: ${theme.header};
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 8px 15px;
+      margin: 10px 20px 15px auto;
+      cursor: pointer;
+      display: block;
+      flex-shrink: 0; /* Prevent button from shrinking */
+    }
+    /* Ensure code block styles are applied within shadow DOM */
+    pre {
+      background-color: ${theme.codeBg};
+      color: ${theme.codeText};
+      padding: 10px; /* More padding */
+      border-radius: 5px;
+      overflow-x: auto;
+      font-family: monospace;
+      font-size: 0.9em; /* Make code slightly smaller */
+      white-space: pre; /* Preserve whitespace strictly in code blocks */
+      word-wrap: normal; /* Prevent wrapping inside code blocks */
+    }
+    code {
+       background-color: ${theme.codeBg};
+       color: ${theme.codeText};
+       padding: 2px 4px;
+       border-radius: 3px;
+       font-family: monospace;
+       font-size: 0.9em;
+    }
+  `;
+
+  // Assemble the Shadow DOM
+  shadow.appendChild(style);
   dialog.appendChild(header);
   dialog.appendChild(content);
   dialog.appendChild(copyButton);
-  
-  // Add to the page
-  document.body.appendChild(backdrop);
-  document.body.appendChild(dialog);
+  shadow.appendChild(dialog);
+
+  // Close when clicking backdrop (host element)
+  host.onclick = function(e) {
+    if (e.target === host) {
+      host.remove();
+    }
+  };
+
+  // Add the host element (with shadow DOM) to the page
+  document.body.appendChild(host);
 }
 
 // Modify this function to accept theme as a parameter
@@ -1051,36 +1089,32 @@ function createCodeTesterDialog(text) {
 
   // Define sanitizeDialogHTML function here directly or use sanitizeHTML
   function sanitizeDialogHTML(text, theme) {
-    // Create a temporary div element
+    // 1. Escape HTML characters first to treat the incoming text as plain text
     const tempDiv = document.createElement('div');
     tempDiv.textContent = text;
-    const sanitizedText = tempDiv.innerHTML;
-    
-    return sanitizedText
-      // Code blocks - ensure content is sanitized inside
+    let escapedText = tempDiv.innerHTML;
+
+    // 2. Now apply markdown-like formatting to the escaped text
+    return escapedText
+      // Code blocks ```...```
       .replace(/```([\s\S]*?)```/g, (match, codeContent) => {
-        const sanitizedCode = document.createElement('div');
-        sanitizedCode.textContent = codeContent;
-        return `<pre style="background-color: ${theme.codeBg}; color: ${theme.codeText}; padding: 8px; border-radius: 5px; overflow-x: auto; font-family: monospace;">${sanitizedCode.innerHTML}</pre>`;
+        // Double-check escaping inside code blocks if needed, though textContent usually handles it
+        const pre = document.createElement('pre');
+        pre.style.cssText = `background-color: ${theme.codeBg}; color: ${theme.codeText}; padding: 10px; border-radius: 5px; overflow-x: auto; font-family: monospace; font-size: 0.9em; white-space: pre; word-wrap: normal;`;
+        pre.textContent = codeContent; // Use textContent to prevent rendering HTML inside code block
+        return pre.outerHTML;
       })
-      // Inline code
+      // Inline code `...`
       .replace(/`([^`]+)`/g, (match, codeContent) => {
-        const sanitizedCode = document.createElement('div');
-        sanitizedCode.textContent = codeContent;
-        return `<code style="background-color: ${theme.codeBg}; color: ${theme.codeText}; padding: 2px 4px; border-radius: 3px; font-family: monospace;">${sanitizedCode.innerHTML}</code>`;
+        const code = document.createElement('code');
+        code.style.cssText = `background-color: ${theme.codeBg}; color: ${theme.codeText}; padding: 2px 4px; border-radius: 3px; font-family: monospace; font-size: 0.9em;`;
+        code.textContent = codeContent;
+        return code.outerHTML;
       })
-      // Bold
-      .replace(/\*\*(.*?)\*\*/g, (match, content) => {
-        const sanitizedContent = document.createElement('div');
-        sanitizedContent.textContent = content;
-        return `<strong>${sanitizedContent.innerHTML}</strong>`;
-      })
-      // Italic
-      .replace(/\*(.*?)\*/g, (match, content) => {
-        const sanitizedContent = document.createElement('div');
-        sanitizedContent.textContent = content;
-        return `<em>${sanitizedContent.innerHTML}</em>`;
-      })
+      // Bold **...**
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      // Italic *...*
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
       // Line breaks
       .replace(/\n/g, '<br>');
   }

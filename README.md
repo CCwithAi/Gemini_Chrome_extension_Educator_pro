@@ -11,10 +11,12 @@ Works with Google Chrome and Microsoft Edge.
 - Educator Pro Mode: Generate quiz questions from code-related content
 - Theme support (light/dark)
 - Markdown formatting and syntax highlighting
-- Search the web without leaving the page your on
+- Search the site context without leaving the page your on
+- Image generation
 
 - Future updates
-- Image generation
+- 2.5 EXp
+- Docker Desktop Backend Hosting
 - Long term Chat History - Memo
 
 ## Installation Instructions
@@ -60,6 +62,46 @@ Works with Google Chrome and Microsoft Edge.
    yarn start
    ```
    You should see: `Chrome Gemini API listening on port 3000`
+
+### Alternative: Running the Backend with Docker
+
+If you have Docker Desktop installed, you can run the backend service in a container. This is useful for isolating the environment.
+
+**Prerequisites:**
+- Docker Desktop installed and running.
+
+**Steps:**
+
+1.  **Ensure `.env` file is configured:** Make sure you have copied `.env.example` to `.env` and filled in your API keys as described in step 3 above. Docker Compose will automatically use this file.
+
+2.  **Build and Run with Docker Compose:**
+    Open a terminal in the project's root directory and run:
+    ```bash
+    docker-compose up --build -d
+    ```
+    - `--build`: Builds the image before starting the container (only needed the first time or after code changes).
+    - `-d`: Runs the container in detached mode (in the background).
+
+3.  **Check Container Status:**
+    You can see if the container is running using:
+    ```bash
+    docker-compose ps
+    ```
+    You should see the `gemini_backend_service` running and the port mapping `0.0.0.0:3000->3000/tcp`.
+
+4.  **View Logs:**
+    To see the server logs from the container:
+    ```bash
+    docker-compose logs -f
+    ```
+    Press `Ctrl+C` to stop following the logs.
+
+5.  **Stopping the Container:**
+    ```bash
+    docker-compose down
+    ```
+
+With the backend running in Docker, proceed to step 5 (Load the extension in Chrome). The extension will connect to `http://localhost:3000` which is mapped to the container.
 
 5. **Load the extension in Chrome**
    - Open Chrome and navigate to `chrome://extensions/`

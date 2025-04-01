@@ -1,0 +1,14 @@
+node_modules
+npm-debug.log
+.git
+.gitignore
+.env
+*.pem
+*.crx
+server-old.js
+server-tweet-genie.js
+Dockerfile
+docker-compose.yml
+README.md
+PLANNING.md
+TASK.md 
