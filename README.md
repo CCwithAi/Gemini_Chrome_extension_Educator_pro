@@ -18,6 +18,10 @@ Works with Google Chrome and Microsoft Edge.
 - 2.5 EXp
 - Docker Desktop Backend Hosting
 - Long term Chat History - Memo
+- Structured Course Content and Progress tracking.
+- Deep Search the web without leaving the page your on (perplexity)
+- Hosted DB Agentic backend with new frameworks.
+- Backend Hosted Pro (paid Version)
 
 ## Installation Instructions
 
