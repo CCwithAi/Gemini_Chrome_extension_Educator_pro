@@ -15,13 +15,12 @@ Works with Google Chrome and Microsoft Edge.
 - Image generation
 
 - Future updates
-- 2.5 EXp
-- Docker Desktop Backend Hosting
-- Long term Chat History - Memo
-- Structured Course Content and Progress tracking.
+- 2.5 EXP (DONE)
+- Docker Desktop Backend Hosting (DONE) 
+- Long term Chat History - Memo 
+- Structured Course Content and Progress tracking. (in Progress)
 - Deep Search the web without leaving the page your on (perplexity)
-- Hosted DB Agentic backend with new frameworks.
-- Backend Hosted Pro (paid Version)
+- MCP Server (In Progress)
 
 ## Installation Instructions
 
