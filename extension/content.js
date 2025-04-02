@@ -76,32 +76,29 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return readStream();
       })
       .then(async (reply) => {
-        // Use original text element and fallback to current active text element
-        const activeElement =
-          originalActiveElement ||
-          (document.activeElement.isContentEditable && document.activeElement);
-
-        if (activeElement) {
+        // If originalActiveElement exists, insert the reply there.
+        // Otherwise, always show the dialog for page selections.
+        if (originalActiveElement) {
           if (
-            activeElement.nodeName.toUpperCase() === "TEXTAREA" ||
-            activeElement.nodeName.toUpperCase() === "INPUT"
+            originalActiveElement.nodeName.toUpperCase() === "TEXTAREA" ||
+            originalActiveElement.nodeName.toUpperCase() === "INPUT"
           ) {
-            // Insert after selection
-            activeElement.value =
-              activeElement.value.slice(0, activeElement.selectionEnd) +
+            // Insert after selection in textarea/input
+            originalActiveElement.value =
+              originalActiveElement.value.slice(0, originalActiveElement.selectionEnd) +
               `\n\n${reply}` +
-              activeElement.value.slice(
-                activeElement.selectionEnd,
-                activeElement.length
+              originalActiveElement.value.slice(
+                originalActiveElement.selectionEnd,
+                originalActiveElement.length
               );
-          } else {
+          } else if (originalActiveElement.isContentEditable) {
             // Special handling for contenteditable
             const replyNode = document.createTextNode(`\n\n${reply}`);
             const selection = window.getSelection();
 
             if (selection.rangeCount === 0) {
               selection.addRange(document.createRange());
-              selection.getRangeAt(0).collapse(activeElement, 1);
+              selection.getRangeAt(0).collapse(originalActiveElement, 1);
             }
 
             const range = selection.getRangeAt(0);
@@ -114,7 +111,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             selection.collapse(replyNode, replyNode.length);
           }
         } else {
-          // Replace the basic alert with a custom dialog
+          // No original input element, so show the dedicated dialog
           createResponseDialog(reply);
         }
 
@@ -898,41 +895,31 @@ function createResponseDialog(text) {
 
 // Modify this function to accept theme as a parameter
 function sanitizeHTML(text, theme) {
-  // Create a temporary div element
+  // 1. Escape HTML characters first to treat the incoming text as plain text
   const tempDiv = document.createElement('div');
-  
-  // Set its textContent (not innerHTML) to escape all HTML
   tempDiv.textContent = text;
-  
-  // Get the escaped text
-  const sanitizedText = tempDiv.innerHTML;
-  
-  // Now we can safely process our supported markdown syntax
-  return sanitizedText
-    // Code blocks - ensure content is sanitized inside
+  let escapedText = tempDiv.innerHTML;
+
+  // 2. Now apply markdown-like formatting to the escaped text
+  return escapedText
+    // Code blocks ```...```
     .replace(/```([\s\S]*?)```/g, (match, codeContent) => {
-      const sanitizedCode = document.createElement('div');
-      sanitizedCode.textContent = codeContent;
-      return `<pre style="background-color: ${theme.codeBg}; color: ${theme.codeText}; padding: 8px; border-radius: 5px; overflow-x: auto; font-family: monospace;">${sanitizedCode.innerHTML}</pre>`;
+      const pre = document.createElement('pre');
+      pre.style.cssText = `background-color: ${theme.codeBg}; color: ${theme.codeText}; padding: 10px; border-radius: 5px; overflow-x: auto; font-family: monospace; font-size: 0.9em; white-space: pre; word-wrap: normal;`;
+      pre.textContent = codeContent; // Use textContent to prevent rendering HTML inside code block
+      return pre.outerHTML;
     })
-    // Inline code
+    // Inline code `...`
     .replace(/`([^`]+)`/g, (match, codeContent) => {
-      const sanitizedCode = document.createElement('div');
-      sanitizedCode.textContent = codeContent;
-      return `<code style="background-color: ${theme.codeBg}; color: ${theme.codeText}; padding: 2px 4px; border-radius: 3px; font-family: monospace;">${sanitizedCode.innerHTML}</code>`;
+      const code = document.createElement('code');
+      code.style.cssText = `background-color: ${theme.codeBg}; color: ${theme.codeText}; padding: 2px 4px; border-radius: 3px; font-family: monospace; font-size: 0.9em;`;
+      code.textContent = codeContent;
+      return code.outerHTML;
     })
-    // Bold
-    .replace(/\*\*(.*?)\*\*/g, (match, content) => {
-      const sanitizedContent = document.createElement('div');
-      sanitizedContent.textContent = content;
-      return `<strong>${sanitizedContent.innerHTML}</strong>`;
-    })
-    // Italic
-    .replace(/\*(.*?)\*/g, (match, content) => {
-      const sanitizedContent = document.createElement('div');
-      sanitizedContent.textContent = content;
-      return `<em>${sanitizedContent.innerHTML}</em>`;
-    })
+    // Bold **...**
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    // Italic *...*
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
     // Line breaks
     .replace(/\n/g, '<br>');
 }

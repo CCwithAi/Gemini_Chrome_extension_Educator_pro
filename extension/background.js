@@ -1,26 +1,36 @@
-// Create context menu items
-chrome.contextMenus.create({
-  id: "ask-gemini",
-  title: "Ask Gemini",
-  contexts: ["selection"],
-});
+// Setup context menus on installation
+chrome.runtime.onInstalled.addListener(() => {
+  // Remove all existing context menus first to ensure a clean slate
+  chrome.contextMenus.removeAll(() => {
+    console.log("Existing context menus removed.");
 
-chrome.contextMenus.create({
-  id: "chat-with-gemini",
-  title: "Chat with Gemini",
-  contexts: ["all"],
-});
+    // Now create the context menu items
+    chrome.contextMenus.create({
+      id: "ask-gemini",
+      title: "Ask Gemini",
+      contexts: ["selection"],
+    });
 
-chrome.contextMenus.create({
-  id: "code-tester",
-  title: "Educator Pro Mode",
-  contexts: ["page"],
-});
+    chrome.contextMenus.create({
+      id: "chat-with-gemini",
+      title: "Chat with Gemini",
+      contexts: ["all"],
+    });
 
-chrome.contextMenus.create({
-  id: "generate-image",
-  title: "Generate Image",
-  contexts: ["selection"],
+    chrome.contextMenus.create({
+      id: "code-tester",
+      title: "Educator Pro Mode",
+      contexts: ["page"],
+    });
+
+    chrome.contextMenus.create({
+      id: "generate-image",
+      title: "Generate Image",
+      contexts: ["selection"],
+    });
+
+    console.log("Context menus created.");
+  });
 });
 
 // Listen for when the user clicks on the context menu items
